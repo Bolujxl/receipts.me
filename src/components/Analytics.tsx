@@ -10,25 +10,31 @@ import {
   YAxis,
 } from 'recharts'
 import { useCategoryTotals, useDailyTotals } from '../analytics'
+import { formatCents } from '../lib/format'
 import type { Expense } from '../types'
 
-const DONUT_COLORS = ['#a1a1aa', '#71717a', '#52525b', '#3f3f46', '#27272a']
+const CATEGORY_COLORS: Record<string, string> = {
+  food: '#9F1239',
+  transport: '#1E40AF',
+  data: '#5B21B6',
+  fun: '#A16207',
+  other: '#52525B',
+}
+
+const AXIS_COLOR = '#A1A1AA'
 
 interface AnalyticsProps {
   filtered: Expense[]
 }
 
-function CustomTooltip({ active, payload }: any) {
+function CustomTooltip({ active, payload, labelKey }: any) {
   if (!active || !payload?.length) return null
-  const { category, amount } = payload[0].payload
-  const formatted = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount)
+  const data = payload[0].payload
+  const label = data[labelKey] ?? ''
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm shadow-lg">
-      <p className="text-zinc-400 capitalize">{category}</p>
-      <p className="text-white font-medium tabular-nums">{formatted}</p>
+    <div className="bg-bg-surface border border-bg-border rounded-lg px-3 py-2 text-sm shadow-lg">
+      <p className="text-text-muted capitalize">{label}</p>
+      <p className="text-text-primary font-medium font-mono">{formatCents(data.amount)}</p>
     </div>
   )
 }
@@ -40,7 +46,7 @@ export default function Analytics({ filtered }: AnalyticsProps) {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-zinc-400 text-xs tracking-wider uppercase mb-4">Spend by Category</h2>
+        <h2 className="text-text-muted text-xs tracking-wider uppercase mb-4">Spend by Category</h2>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -55,18 +61,18 @@ export default function Analytics({ filtered }: AnalyticsProps) {
                 paddingAngle={2}
                 stroke="none"
               >
-                {categoryTotals.map((_, i) => (
-                  <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
+                {categoryTotals.map((entry, i) => (
+                  <Cell key={i} fill={CATEGORY_COLORS[entry.category] || CATEGORY_COLORS.other} />
                 ))}
               </Pie>
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<CustomTooltip labelKey="category" />} />
             </PieChart>
           </ResponsiveContainer>
         </div>
       </div>
 
       <div>
-        <h2 className="text-zinc-400 text-xs tracking-wider uppercase mb-4">Daily Trend (7 Days)</h2>
+        <h2 className="text-text-muted text-xs tracking-wider uppercase mb-4">Daily Trend (7 Days)</h2>
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={dailyTotals} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
@@ -74,21 +80,27 @@ export default function Analytics({ filtered }: AnalyticsProps) {
                 dataKey="day"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: '#71717a', fontSize: 12 }}
+                tick={{ fill: AXIS_COLOR, fontSize: 12 }}
               />
               <YAxis
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: '#71717a', fontSize: 12 }}
-                tickFormatter={(v) => `$${v}`}
+                tick={{ fill: AXIS_COLOR, fontSize: 12 }}
+                tickFormatter={(v) => formatCents(v)}
               />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar
-                dataKey="amount"
-                fill="#d4d4d8"
-                radius={[4, 4, 0, 0]}
-                maxBarSize={48}
-              />
+              <Tooltip content={<CustomTooltip labelKey="day" />} />
+              <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={48}>
+                {dailyTotals.map((entry, i) => (
+                  <Cell
+                    key={i}
+                    fill={
+                      entry.amount === 0
+                        ? '#27272A'
+                        : (CATEGORY_COLORS[entry.dominantCategory] || CATEGORY_COLORS.other)
+                    }
+                  />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>

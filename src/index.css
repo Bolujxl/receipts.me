@@ -1,1 +1,26 @@
 @import "tailwindcss";
+
+@theme {
+  --color-brand: rgb(var(--brand));
+  --color-brand-hover: rgb(var(--brand-hover));
+  --color-brand-muted: rgb(var(--brand-muted));
+  --color-brand-text-on: rgb(var(--brand-text-on));
+  --color-bg-base: rgb(var(--bg-base));
+  --color-bg-surface: rgb(var(--bg-surface));
+  --color-bg-elevated: rgb(var(--bg-elevated));
+  --color-bg-border: rgb(var(--bg-border));
+  --color-text-primary: rgb(var(--text-primary));
+  --color-text-secondary: rgb(var(--text-secondary));
+  --color-text-muted: rgb(var(--text-muted));
+  --color-text-faint: rgb(var(--text-faint));
+  --color-cat-food: rgb(var(--cat-food));
+  --color-cat-transport: rgb(var(--cat-transport));
+  --color-cat-data: rgb(var(--cat-data));
+  --color-cat-fun: rgb(var(--cat-fun));
+  --color-cat-other: rgb(var(--cat-other));
+  --color-status-success: rgb(var(--status-success));
+  --color-status-warning: rgb(var(--status-warning));
+  --color-status-error: rgb(var(--status-error));
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}

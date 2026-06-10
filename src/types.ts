@@ -2,7 +2,7 @@ export type Category = 'food' | 'transport' | 'data' | 'fun' | 'other'
 
 export interface Expense {
   id: string
-  amount: number
+  amountCents: number
   category: Category
   date: string
 }

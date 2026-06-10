@@ -48,34 +48,50 @@ export function useFilteredExpenses(expenses: Expense[], timeframe: Timeframe) {
 }
 
 export function useTotal(filtered: Expense[]) {
-  return useMemo(() => filtered.reduce((sum, e) => sum + e.amount, 0), [filtered])
+  return useMemo(() => filtered.reduce((sum, e) => sum + e.amountCents, 0), [filtered])
 }
 
 export function useCategoryTotals(filtered: Expense[]) {
   return useMemo(() => {
     const map: Record<string, number> = {}
     for (const e of filtered) {
-      map[e.category] = (map[e.category] || 0) + e.amount
+      map[e.category] = (map[e.category] || 0) + e.amountCents
     }
     return Object.entries(map).map(([category, amount]) => ({ category, amount }))
   }, [filtered])
 }
 
 export function useDailyTotals(filtered: Expense[]) {
+  // TODO [Audit 03 §3 / Cross-check B]: pre-bucket expenses by date in a single O(n) pass
   return useMemo(() => {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
     const today = new Date()
-    const days: { day: string; amount: number }[] = []
+    const days: { day: string; amount: number; dominantCategory: string }[] = []
 
     for (let i = 6; i >= 0; i--) {
       const d = new Date(today)
       d.setDate(d.getDate() - i)
       const iso = d.toISOString().split('T')[0]
       const dayLabel = dayNames[d.getDay()]
-      const total = filtered
-        .filter((e) => e.date === iso)
-        .reduce((sum, e) => sum + e.amount, 0)
-      days.push({ day: dayLabel, amount: total })
+      const dayExpenses = filtered.filter((e) => e.date === iso)
+      const total = dayExpenses.reduce((sum, e) => sum + e.amountCents, 0)
+
+      let dominantCategory = 'other'
+      if (dayExpenses.length > 0) {
+        const catMap: Record<string, number> = {}
+        for (const e of dayExpenses) {
+          catMap[e.category] = (catMap[e.category] || 0) + e.amountCents
+        }
+        let maxAmount = 0
+        for (const [cat, amt] of Object.entries(catMap)) {
+          if (amt > maxAmount) {
+            maxAmount = amt
+            dominantCategory = cat
+          }
+        }
+      }
+
+      days.push({ day: dayLabel, amount: total, dominantCategory })
     }
 
     return days

@@ -1,0 +1,55 @@
+/**
+ * receipts.me — Design Tokens
+ *
+ * Color system: sage accent (#7C9F3F) on cool zinc grays.
+ * Categories use distinct hues (rose, cobalt, violet, amber, gray) for legibility.
+ *
+ * All values are stored as RGB triplets (space-separated) so Tailwind's
+ * arbitrary-value syntax can apply opacity via `rgb(var(--token) / <alpha-value>)`.
+ *
+ * Usage:
+ *   .text-primary { color: rgb(var(--text-primary)); }
+ *   .text-primary-50 { color: rgb(var(--text-primary) / 0.5); }
+ */
+
+:root {
+  /* ─── BRAND ─────────────────────────────────────────────────────── */
+
+  /* Sage accent — the singular brand color. Used for the logo, the total,
+     primary CTAs, focus states, and any moment the brand "speaks". */
+  --brand: 124 159 63;              /* #7C9F3F — sage/olive */
+  --brand-hover: 110 142 56;        /* #6E8E38 — slightly darker for hover */
+  --brand-muted: 124 159 63;        /* same hue, used with opacity for tinted backgrounds */
+  --brand-text-on: 250 250 250;     /* near-white text on sage background */
+
+  /* ─── SURFACE (cool zinc family) ─────────────────────────────────── */
+
+  /* Layered backgrounds, darkest to lightest */
+  --bg-base: 10 10 11;              /* #0A0A0B — deepest background */
+  --bg-surface: 24 24 27;           /* #18181B — surface (cards, panels) */
+  --bg-elevated: 39 39 42;          /* #27272A — elevated surface (inputs, hovered states) */
+  --bg-border: 63 63 70;            /* #3F3F46 — borders, dividers */
+
+  /* ─── TEXT (on cool zinc base) ─────────────────────────────────── */
+
+  --text-primary: 250 250 250;      /* #FAFAFA — primary text, near-white */
+  --text-secondary: 228 228 231;    /* #E4E4E7 — secondary text, slightly muted */
+  --text-muted: 161 161 170;        /* #A1A1AA — muted text, labels */
+  --text-faint: 113 113 122;        /* #71717A — faintest readable text */
+
+  /* ─── CATEGORY COLORS (semantic, used by donut + bar charts + badges) ── */
+
+  /* Each category gets a distinct hue, all at -700/-800 saturation
+     so they harmonize without competing. */
+  --cat-food: 159 18 57;            /* #9F1239 — rose-800 (aged wine) */
+  --cat-transport: 30 64 175;       /* #1E40AF — blue-800 (deep cobalt) */
+  --cat-data: 91 33 182;            /* #5B21B6 — violet-800 (bruised purple) */
+  --cat-fun: 161 98 7;              /* #A16207 — amber-700 (burnished gold) */
+  --cat-other: 82 82 91;            /* #52525B — zinc-600 (neutral) */
+
+  /* ─── SEMANTIC (status indicators, not used in current build) ──── */
+
+  --status-success: 124 159 63;     /* sage — reuses brand for success */
+  --status-warning: 217 119 6;      /* #D97706 — amber-600 */
+  --status-error: 220 38 38;        /* #DC2626 — red-600 */
+}
