@@ -52,7 +52,7 @@ export default function ExpenseForm({ onAdd }: ExpenseFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-bg-surface border border-bg-border p-6 rounded-xl space-y-4"
+      className="bg-bg-surface border border-bg-border p-6 rounded-xl space-y-4 min-h-[300px] flex flex-col"
     >
       <div className="space-y-1.5">
         <label className="text-text-muted text-xs tracking-wider uppercase">Amount</label>
@@ -100,6 +100,8 @@ export default function ExpenseForm({ onAdd }: ExpenseFormProps) {
       {error && (
         <p className="text-status-error text-xs">{error}</p>
       )}
+
+      <div className="flex-1" />
 
       <button
         type="submit"

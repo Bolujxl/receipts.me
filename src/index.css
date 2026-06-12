@@ -15,8 +15,12 @@
   --color-text-faint: rgb(var(--text-faint));
   --color-cat-food: rgb(var(--cat-food));
   --color-cat-transport: rgb(var(--cat-transport));
-  --color-cat-data: rgb(var(--cat-data));
+  --color-cat-housing: rgb(var(--cat-housing));
+  --color-cat-bills: rgb(var(--cat-bills));
+  --color-cat-health: rgb(var(--cat-health));
+  --color-cat-shopping: rgb(var(--cat-shopping));
   --color-cat-fun: rgb(var(--cat-fun));
+  --color-cat-data: rgb(var(--cat-data));
   --color-cat-other: rgb(var(--cat-other));
   --color-status-success: rgb(var(--status-success));
   --color-status-warning: rgb(var(--status-warning));

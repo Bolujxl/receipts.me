@@ -43,8 +43,12 @@
      so they harmonize without competing. */
   --cat-food: 159 18 57;            /* #9F1239 — rose-800 (aged wine) */
   --cat-transport: 30 64 175;       /* #1E40AF — blue-800 (deep cobalt) */
-  --cat-data: 91 33 182;            /* #5B21B6 — violet-800 (bruised purple) */
+  --cat-housing: 15 118 110;        /* #0F766E — teal-700 */
+  --cat-bills: 71 85 105;           /* #475569 — slate-600 */
+  --cat-health: 4 120 87;           /* #047857 — emerald-700 */
+  --cat-shopping: 157 23 77;        /* #9D174D — pink-800 */
   --cat-fun: 161 98 7;              /* #A16207 — amber-700 (burnished gold) */
+  --cat-data: 91 33 182;            /* #5B21B6 — violet-800 (bruised purple) */
   --cat-other: 82 82 91;            /* #52525B — zinc-600 (neutral) */
 
   /* ─── SEMANTIC (status indicators, not used in current build) ──── */
