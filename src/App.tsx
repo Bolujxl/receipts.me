@@ -3,7 +3,6 @@ import type { Expense, Timeframe } from './types'
 import { useLocalStorage } from './useLocalStorage'
 import { useFilteredExpenses } from './analytics'
 import { ExpensesSchema } from './lib/validation'
-import { seedExpenses } from './seed'
 import CornerMark from './components/CornerMark'
 import SentenceHeader from './components/SentenceHeader'
 import ExpenseForm from './components/ExpenseForm'
@@ -30,9 +29,6 @@ export default function App() {
   const [recentlyDeleted, setRecentlyDeleted] = useState<Expense | null>(null)
 
   useEffect(() => {
-    if (expenses.length === 0) {
-      setExpenses(seedExpenses)
-    }
     setHydrated(true)
   }, [])
 
