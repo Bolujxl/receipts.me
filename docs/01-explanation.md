@@ -2,254 +2,221 @@
 
 ## 1. The Starting Line: Making the Data
 
-Imagine you have a magic notebook. Every time you spend money on something&#8212;lunch, a bus ride, a Netflix subscription&#8212;you scribble it down on a sticky note and slap it onto the notebook&#8217;s cover. That sticky note is an *Expense*. And the notebook? That&#8217;s React&#8217;s state&#8212;a living list that remembers everything you&#8217;ve ever written, even if you close the app and come back tomorrow.
+Imagine you have a magic notebook. Every time you spend money on something — lunch, a bus ride, rent — you scribble it down on a sticky note and slap it onto the notebook's cover. That sticky note is an *Expense*. And the notebook? That's React's state — a living list that remembers everything you've ever written, even if you close the app and come back tomorrow.
 
-But before the sticky note reaches the notebook, it has to pass through a little robot called the **Form**. The form is a strict quality inspector. It won&#8217;t let a bad sticky note through. Let&#8217;s watch the inspector do its job, line by line. 
+But before the sticky note reaches the notebook, it has to pass through a little robot called the **Form**. The form is a strict quality inspector. It won't let a bad sticky note through. Let's watch the inspector do its job, line by line.
 
 ### Line-by-Line Breakdown: The `handleSubmit` Journey
 
-Everything starts in `src/components/ExpenseForm.tsx:17`&#8212;the `handleSubmit` function.
+Everything starts in `src/components/ExpenseForm.tsx:17` — the `handleSubmit` function.
 
 ```ts
 function handleSubmit(e: React.FormEvent) {
   e.preventDefault()
 ```
 
-When you click the big "Add Expense" button, the browser&#8217;s default instinct is to reload the page. `e.preventDefault()` tells the browser, &#8220;Stop right there&#8212;*I&#8217;m* driving.&#8221;
+When you click the "Add Expense" button, the browser's default instinct is to reload the page. `e.preventDefault()` tells the browser, "Stop right there — *I'm* driving."
+
+But instead of writing validation from scratch, the form calls a shared helper:
 
 ```ts
-  const parsed = parseFloat(amount)
-  if (isNaN(parsed) || parsed <= 0) {
-    setError('Enter a positive amount.')
+  const { amountCents, error: validationError } = validateExpenseInput(amount, date)
+  if (validationError) {
+    setError(validationError)
     return
   }
 ```
 
-The `amount` state variable (`ExpenseForm.tsx:12`) holds whatever you typed into the number input as a *string*. `parseFloat` tries to turn that string into a real number. If you typed `"banana"` or left it empty, `parseFloat` returns `NaN` (Not-a-Number), and the guard slams the gate shut. It also rejects zero or negative amounts, because spending -$5 makes no sense in the real world.
+This calls `validateExpenseInput` from `src/lib/format.ts`. It's a shared function used by *both* forms (Add + Edit) so there's only one place to fix bugs. Inside it:
 
 ```ts
-  if (date > todayISO) {
-    setError('Future dates are not allowed.')
-    return
-  }
+const todayISO = new Date().toLocaleDateString('en-CA')  // "2026-06-13" in local time
+const parsed = parseFloat(amount)
+if (isNaN(parsed) || parsed <= 0) return { error: 'Enter a positive amount.' }
+if (date > todayISO) return { error: 'Future dates are not allowed.' }
+return { amountCents: Math.round(parsed * 100) }
 ```
 
-On line 9, `todayISO` is calculated once when the component mounts:
+Notice two clever things here:
 
-```ts
-const todayISO = new Date().toISOString().split('T')[0]
-```
+1. **`toLocaleDateString('en-CA')`** — the Canadian English locale formats dates as YYYY-MM-DD. Unlike `toISOString()` which uses UTC, this gives the date in *your* timezone. If you add an expense at 11 PM, it shows today, not tomorrow. (The old code had this bug — fixed in a later audit.)
 
-This gives us a string like `"2026-06-07"`. If you try to set a receipt&#8217;s date to tomorrow or next year, the inspector says &#8220;Nope, you can&#8217;t spend money you haven&#8217;t spent yet.&#8221;
+2. **`Math.round(parsed * 100)`** — this converts dollars to integer cents. If you type `19.99`, it becomes `1999`. The `Math.round` is critical because `19.99 * 100` equals `1998.9999999999998` in binary floating-point. Without the round, you'd lose a penny. *With* the round, it lands on exactly `1999`.
 
-Now the fun part&#8212;the inspector stamps the sticky note and sends it flying up to the notebook:
+This is the birth of the `amountCents` paradigm: store money as integers, never as floating-point. Every arithmetic operation in the entire app works on whole numbers. The only time we divide by 100 is at the very end — when displaying to a human.
+
+Now the inspector stamps the sticky note:
 
 ```ts
   onAdd({
     id: crypto.randomUUID(),
-    amount: parsed,
+    amountCents,
     category,
     date,
   })
 ```
 
-This is the birth of an `Expense` object. Let&#8217;s look at the shape, defined in `src/types.ts:3-8`:
+The `Expense` shape lives in `src/types.ts:12-17`:
 
 ```ts
 export interface Expense {
   id: string
-  amount: number
-  category: Category
-  date: string
+  amountCents: number    // integer, e.g. 1999 = $19.99
+  category: Category     // one of 9 strings
+  date: string           // "2026-06-13"
 }
 ```
 
-- **`id: crypto.randomUUID()`** &#8211; Every sticky note gets a globally unique fingerprint (like `"a1b2c3d4-..."`). If two notes had the same ID, React would get confused about which is which. `crypto.randomUUID()` guarantees this never happens.
-- **`amount: parsed`** &#8211; The number version of what you typed (e.g., `42.5`, not `"42.5"`).
-- **`category: category`** &#8211; One of `'food' | 'transport' | 'data' | 'fun' | 'other'`, pulled from the local state initialized on `ExpenseForm.tsx:13` (defaults to `'food'`).
-- **`date: date`** &#8211; The ISO date string, validated above.
+The `Category` type isn't 5 options anymore — it's 9:
+
+```ts
+export type Category =
+  | 'food' | 'transport' | 'housing' | 'bills'
+  | 'health' | 'shopping' | 'fun' | 'data' | 'other'
+```
 
 After stamping, the inspector tidies up its desk:
 
 ```ts
   setAmount('')
-  setCategory('food')
-  setDate(todayISO)
+  setDate(new Date().toLocaleDateString('en-CA'))
   setError('')
 }
 ```
 
-Everything resets so you&#8217;re ready to add the next expense immediately.
+The amount clears. The date resets to today. But notice what's *missing*: `setCategory('food')`. The category stays on whatever you last picked. If you're batch-entering 5 transport expenses, you no longer have to re-select "transport" every time. This was a quality-of-life fix from the code review.
 
 ### Where Does the Note Actually Go?
 
-The `onAdd` prop is wired up in `src/App.tsx:44-46`:
+The `onAdd` prop is wired up in `src/App.tsx`:
 
-```ts
-<ExpenseForm
-  onAdd={(e) => setExpenses((prev) => [e, ...prev])}
-/>
+```tsx
+<ExpenseForm onAdd={handleAdd} />
 ```
 
-This is the moment the sticky note hits the notebook. `setExpenses` is the setter returned by our `useLocalStorage` hook. It takes the *previous* array of expenses and returns a *brand new* array with the new expense at the front (`...prev` spreads the old notes after the new one). This is **immutable update**&#8212;we never modify the old array in place; we create a fresh one, because React compares references to know when to re-render.
+And `handleAdd` is:
+
+```ts
+const handleAdd = (expense: Expense) => {
+  setExpenses((prev) => [expense, ...prev])
+}
+```
+
+This is the moment the sticky note hits the notebook. `setExpenses` puts the new expense at the front of the array. `...prev` spreads the existing notes after it — an **immutable update**. We never modify the old array; we create a brand new one with the new note prepended. React compares references to know when to re-render.
 
 ### The Vault: How `useLocalStorage` Works
 
-The genius of this app is that data survives a page refresh. The magic is in `src/useLocalStorage.ts`:
+The data survives page refreshes. The magic is in `src/useLocalStorage.ts`:
 
 ```ts
-export function useLocalStorage<T>(key: string, initialValue: T) {
-  const [value, setValue] = useState<T>(() => {
-    try {
-      const stored = localStorage.getItem(key)
-      return stored ? (JSON.parse(stored) as T) : initialValue
-    } catch {
-      return initialValue
+export function useLocalStorage<T>(
+  key: string,
+  initialValue: T,
+  validator?: (parsed: unknown) => T | null
+) {
+```
+
+It now takes an optional third argument: a `validator`. This was one of the biggest audit fixes. Here's how the read path works:
+
+```ts
+const [value, setValue] = useState<T>(() => {
+  try {
+    const stored = localStorage.getItem(key)
+    if (!stored) return initialValue
+    const parsed: unknown = JSON.parse(stored)
+    if (validator) {
+      const validated = validator(parsed)
+      if (validated === null) {
+        console.warn(`useLocalStorage: validation failed for key "${key}", using initial value`)
+        return initialValue
+      }
+      return validated
     }
-  })
+    return parsed as T
+  } catch {
+    return initialValue
+  }
+})
 ```
 
-When the app first mounts, `useState` runs its **initializer function**. It reaches into the browser&#8217;s `localStorage` (a key-value storage closet built into every browser) and looks for the key `'receipts_data'`. If it finds it, `JSON.parse` un-freezes the data from a string back into a JavaScript array. If the closet is empty, it uses `initialValue` (an empty array `[]`), which triggers the seed data logic we&#8217;ll see in a moment.
-
-The read is wrapped in `try/catch` in case the stored data is corrupted&#8212;parsing bad JSON throws an error, and we gracefully fall back to an empty array.
+When the app mounts, it reads `localStorage('receipts_data')`. If the data exists, it passes through a **zod validator** defined in `src/lib/validation.ts`:
 
 ```ts
-  useEffect(() => {
-    try {
-      localStorage.setItem(key, JSON.stringify(value))
-    } catch {
-      // storage full or unavailable
-    }
-  }, [key, value])
+export const ExpenseSchema = z.object({
+  id: z.string().min(1),
+  amountCents: z.number().int().positive().finite(),
+  category: z.enum(['food', 'transport', 'housing', 'bills', 'health', 'shopping', 'fun', 'data', 'other']),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+})
 ```
 
-Every time `value` changes (i.e., every time you add an expense), this `useEffect` automatically calls `JSON.stringify` to freeze the array into a string and stash it back in the closet. The dependency array `[key, value]` means &#8220;run this whenever `key` or `value` changes.&#8221;
+If someone tampered with localStorage via DevTools and wrote `"foood"` as a category, or removed the `amountCents` field, the validator rejects the entire array. The app falls back to an empty array and logs a warning. No crash, no broken charts, no weird donut slices labeled "foood." This was the fix for two audit findings at once — the type-unsafe hydration and the category typo vulnerability.
 
-The `catch` block is silent&#8212;if `localStorage` is full or blocked (e.g., Safari private mode), the app still works in memory; it just won&#8217;t persist.
-
-```ts
-  return [value, set] as const
-```
-
-The hook returns a tuple exactly like `useState`&#8217;s `[getter, setter]`, so App.tsx can destructure it identically:
-
-```ts
-const [expenses, setExpenses] = useLocalStorage<Expense[]>('receipts_data', [])
-```
-
-### The Seed: First-Time Visitors Get a Welcome Gift
-
-Back in `src/App.tsx:15-20`:
+The write path is simpler:
 
 ```ts
 useEffect(() => {
-  if (expenses.length === 0) {
-    setExpenses(seedExpenses)
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // TODO: surface storage-unavailable state to UI
   }
-  setHydrated(true)
-}, [])
+}, [key, value])
 ```
 
-This `useEffect` runs **once** when the app first mounts (empty dependency array `[]`). If the expenses list is empty&#8212;meaning the user is brand new&#8212;it populates the notebook with five colorful example expenses from `src/seed.ts`. Each is a pre-built `Expense` object with realistic amounts and categories spread across the last 6 days. The user sees a living demo instead of a blank, intimidating screen.
-
-The `hydrated` state starts `false` and flips to `true` here. Before hydration, `App.tsx:25-31` renders a simple &#8220;Loading&#8230;&#8221; message&#8212;this prevents a flash of empty UI while the seed writes to `localStorage`.
+Every time `value` changes, the array is frozen into a string and stashed in the browser's storage closet. If the closet is full or blocked (private mode), the catch block silently swallows the error — the app keeps working in memory, it just won't persist.
 
 ---
 
 ## 2. The Magic Glasses: Filtering the Truth
 
-Now you&#8217;ve got a drawer full of sticky notes&#8212;receipts from today, last month, maybe last year. The drawer is heavy. You don&#8217;t want to carry the whole thing around. So you pull out a pair of **Magic Glasses**.
+Now you've got a drawer full of sticky notes — receipts from today, last month, maybe last year. You pull out a pair of **Magic Glasses**.
 
-When you put on the red glasses, you can *only* see notes from this week. Blue glasses show last week. Clear glasses show everything. But&#8212;and this is the most important thing&#8212;**the drawer itself never changes.** The glasses don&#8217;t rip up or scribble out the other notes. They just hide them from view. You can swap glasses all day long, and the original drawer stays perfectly intact.
+Red glasses: you see only this week. Blue glasses: last week. Clear glasses: everything. But the drawer itself never changes. The glasses don't rip up or scribble out the other notes. They just hide them from view.
 
-This is exactly what `.filter()` does. It creates a *copy* of the array containing only the items that match a rule. It is **non-destructive** and **non-mutative**.
+This is what `.filter()` does. It creates a *copy* of the array with only the matching items. Non-destructive, non-mutative.
 
-### How the Glasses Get Chosen: The Header
+### How the Glasses Get Chosen: The Sentence Header
 
-In `src/components/Header.tsx:3-7`, we define the three lenses:
+The timeframe picker doesn't live in a clunky segmented control anymore. It lives *inside* the sentence:
 
-```ts
-const TIMEFRAMES: { value: Timeframe; label: string }[] = [
-  { value: 'this-week', label: 'This Week' },
-  { value: 'last-week', label: 'Last Week' },
-  { value: 'all-time', label: 'All Time' },
-]
-```
+> **$785.00** out this **week**, mostly on **transport**.
 
-Each button, when clicked (`Header.tsx:24`), calls:
+The word "week" is a button. Click it, and a floating dropdown appears directly below with three options: This Week, Last Week, All Time. This is the `TimeframeDropdown` component (`src/components/TimeframeDropdown.tsx`) — a hand-rolled menu with keyboard navigation (Arrow keys, Home, End, Escape).
 
-```ts
-onClick={() => onTimeframeChange(t.value)}
-```
-
-Which in App.tsx translates to `setTimeframe(t.value)`, updating the `timeframe` state variable (`App.tsx:13`). The active button gets highlighted with `bg-zinc-800` (`Header.tsx:27`), giving the user a clear visual of which glasses are on.
+The dropdown is rendered with `position: fixed` anchored to the button's `DOMRect`. When you click an option, `onTimeframeChange` fires, which calls `setTimeframe(t.value)` in App.tsx. The sentence re-renders with the new timeframe word and recalculated amounts.
 
 ### The Lens Itself: `filterByTimeframe`
 
-The heavy lifting happens in `src/analytics.ts:20-44`. Let&#8217;s walk through `filterByTimeframe`:
+It lives in `src/analytics.ts:20-44` and is a **pure function** — same input always gives same output, no side effects, no global state:
 
 ```ts
 export function filterByTimeframe(expenses: Expense[], timeframe: Timeframe): Expense[] {
   const now = new Date()
-```
-
-We grab the current moment. Everything is relative to *right now*.
-
-```ts
   const thisMonday = startOfWeek(now)
   const thisSunday = endOfWeek(now)
 ```
 
-The helper functions `startOfWeek` and `endOfWeek` (`analytics.ts:4-18`) calculate Monday at 00:00:00.000 and Sunday at 23:59:59.999 of the current week.
-
-`startOfWeek` works like this: `getDay()` returns 0 for Sunday, 1 for Monday, etc. The formula `diff = d.getDate() - day + (day === 0 ? -6 : 1)` shifts the date backward to Monday. For example, if today is Wednesday the 10th, `day` is 3, so `diff = 10 - 3 + 1 = 8`, giving you Monday the 8th.
+`startOfWeek` and `endOfWeek` (`analytics.ts:4-18`) calculate Monday at 00:00:00.000 and Sunday at 23:59:59.999 of the current week. `getDay()` returns 0 for Sunday, 1 for Monday, etc. The formula shifts backward to Monday, then the end adds 6 days for Sunday.
 
 ```ts
-  const lastMonday = new Date(thisMonday)
-  lastMonday.setDate(lastMonday.getDate() - 7)
-  const lastSunday = new Date(thisSunday)
-  lastSunday.setDate(lastSunday.getDate() - 7)
+  case 'this-week':
+    return expenses.filter((e) => {
+      const d = new Date(e.date)
+      return d >= thisMonday && d <= thisSunday
+    })
 ```
 
-For &#8220;Last Week,&#8221; we take this week&#8217;s boundaries and subtract 7 days. Simple, clean, no magic.
-
-Now the big switch:
+`.filter()` walks through every expense. For each one: does its date fall inside the Monday-to-Sunday window? If yes, it goes into a brand-new array. If no, skipped. The original `expenses` array is untouched.
 
 ```ts
-  switch (timeframe) {
-    case 'this-week':
-      return expenses.filter((e) => {
-        const d = new Date(e.date)
-        return d >= thisMonday && d <= thisSunday
-      })
+  case 'all-time':
+    return expenses
 ```
 
-`.filter()` walks through every single expense in the original array. For each one, it asks: &#8220;Does this note&#8217;s date fall between Monday and Sunday of *this* week?&#8221; If yes, the note gets copied into a brand-new array. If no, it&#8217;s skipped.
-
-Crucially, `expenses.filter(...)` does **not** modify the `expenses` array. It returns a fresh array. The original lives untouched in `useLocalStorage` state, safe and sound.
-
-```ts
-    case 'last-week':
-      return expenses.filter((e) => {
-        const d = new Date(e.date)
-        return d >= lastMonday && d <= lastSunday
-      })
-```
-
-Same idea, shifted back 7 days.
-
-```ts
-    case 'all-time':
-      return expenses
-  }
-}
-```
-
-The clear glasses: no filtering at all. Returns the original reference. (Still no mutation, just passing through.)
+The clear glasses. Returns the original reference — no copy, no mutation. Just passes through.
 
 ### Wrapping it in `useMemo`
-
-In `analytics.ts:46-48`:
 
 ```ts
 export function useFilteredExpenses(expenses: Expense[], timeframe: Timeframe) {
@@ -257,59 +224,20 @@ export function useFilteredExpenses(expenses: Expense[], timeframe: Timeframe) {
 }
 ```
 
-`useMemo` is like a smart bookmark. It says: &#8220;Only re-run `filterByTimeframe` if `expenses` or `timeframe` actually changed.&#8221; Without it, every time the component re-renders (even for unrelated reasons), we&#8217;d recalculate the filtered list from scratch. Since filtering involves creating new `Date` objects for every expense, this would be wasteful. `useMemo` memoizes (remembers) the result and hands it back instantly unless the inputs are new.
-
-Back in `App.tsx:22`:
-
-```ts
-const filtered = useFilteredExpenses(expenses, timeframe)
-```
-
-`filtered` is now the shelf of notes visible through whichever glasses you&#8217;re wearing. It&#8217;s a **derived state**&#8212;a value calculated from `expenses` and `timeframe`, never stored independently.
+`useMemo` says: "Only re-run `filterByTimeframe` if `expenses` or `timeframe` actually changed." Without it, every render would recreate all those `new Date()` objects for every expense. With `useMemo`, it hands back the same result instantly unless the inputs are new.
 
 ---
 
 ## 3. Feeding the Robot: How the Charts Eat Data
 
-You&#8217;ve got your filtered sticky notes. Now you want to show them off. But the charting library (Recharts) is a **picky robot**. It will only eat food prepared in a very specific shape. If you hand it the raw `Expense[]` array, the robot beeps angrily and shuts down.
+You've got your filtered sticky notes. Now you want to show them off. But Recharts is a **picky robot**. It only eats food in very specific shapes:
 
-The robot&#8217;s required diet:
+- **Donut:** `[{category: 'food', amount: 5000}, {category: 'transport', amount: 2500}, ...]`
+- **Bar Chart:** `[{day: 'Mon', amount: 4200}, {day: 'Tue', amount: 1500}, ...]`
 
-- **Pie/Donut Chart:** Eats `[{category: 'food', amount: 50}, {category: 'transport', amount: 25}, ...]`
-- **Bar Chart:** Eats `[{day: 'Mon', amount: 42}, {day: 'Tue', amount: 15}, ...]`
+Our raw expense is `{id, amountCents, category, date}`. We need to squish, group, and reshape this into robot-food. This happens in hooks inside `src/analytics.ts`.
 
-Our raw expense looks like `{id, amount, category, date}`. We need to squish, group, and reshape this data into robot-food format. This is **data transformation**, and it happens in three custom hooks inside `src/analytics.ts`.
-
-### Meal #1: The Grand Total (`useTotal`)
-
-`analytics.ts:50-52`:
-
-```ts
-export function useTotal(filtered: Expense[]) {
-  return useMemo(() => filtered.reduce((sum, e) => sum + e.amount, 0), [filtered])
-}
-```
-
-`.reduce()` takes an array and squishes it down into a single value. It walks through each expense, adding its `amount` to a running `sum`. The `0` at the end is the starting sum (an empty jar).
-
-Walk-through for `filtered = [{amount: 10}, {amount: 20}, {amount: 5}]`:
-
-| Step | `e`           | `sum` before | `sum + e.amount` | `sum` after |
-|------|---------------|-------------|-------------------|-------------|
-| 0    | (start)       | 0           | &#8211;            | 0           |
-| 1    | `{amount:10}` | 0           | `0 + 10`          | 10          |
-| 2    | `{amount:20}` | 10          | `10 + 20`         | 30          |
-| 3    | `{amount:5}`  | 30          | `30 + 5`          | 35          |
-
-Result: `35`. This single number flows into `App.tsx:23` as `total`, then into the `Header` component where it&#8217;s displayed as the big dollar amount (`Header.tsx:38-39`):
-
-```ts
-${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-```
-
-`toLocaleString` formats `35` as `"35.00"` and `1234.5` as `"1,234.50"`.
-
-### Meal #2: The Donut&#8217;s Dinner (`useCategoryTotals`)
+### Meal #1: The Category Breakdown (`useCategoryTotals`)
 
 `analytics.ts:54-62`:
 
@@ -318,156 +246,74 @@ export function useCategoryTotals(filtered: Expense[]) {
   return useMemo(() => {
     const map: Record<string, number> = {}
     for (const e of filtered) {
-      map[e.category] = (map[e.category] || 0) + e.amount
+      map[e.category] = (map[e.category] || 0) + e.amountCents
     }
     return Object.entries(map).map(([category, amount]) => ({ category, amount }))
   }, [filtered])
 }
 ```
 
-This is a two-step recipe:
+A two-step recipe:
 
-**Step 1 &#8211; Build the map:** We create an empty dictionary `{}`. For each expense, we look at its category. If the category key doesn&#8217;t exist yet in the map, `map[e.category] || 0` gives `0`. Then we add the expense&#8217;s amount to whatever was already there.
+**Step 1 — Build the map.** For each expense, add its `amountCents` to the bucket for its category. If the bucket doesn't exist yet (`|| 0`), start at zero.
 
-Example with 3 food expenses ($10, $5, $20) and 2 transport ($15, $8):
+**Step 2 — Reshape.** `Object.entries(map)` turns `{food: 5000, transport: 2500}` into `[['food', 5000], ['transport', 2500]]`. Then `.map()` transforms each pair into `{category: 'food', amount: 5000}` — exactly the shape Recharts expects.
 
-| Iteration | `e.category` | `e.amount` | `map` after                                         |
-|-----------|-------------|-----------|-----------------------------------------------------|
-| 1         | `'food'`    | 10        | `{ food: 10 }`                                      |
-| 2         | `'transport'`| 15       | `{ food: 10, transport: 15 }`                      |
-| 3         | `'food'`    | 20        | `{ food: 30, transport: 15 }`                      |
-| 4         | `'transport'`| 8        | `{ food: 30, transport: 23 }`                      |
-| 5         | `'food'`    | 5         | `{ food: 35, transport: 23 }`                      |
+This array feeds the `DonutCard` component (`src/components/DonutCard.tsx`). Behind the main donut ring, a faint 20%-opacity ring shows last week's proportions for comparison (computed by `useLastWeekCategoryTotals`). And if you've set budgets, an outer ring at 25% opacity shows the cap for each category — so you can see at a glance whether spending is within bounds.
 
-**Step 2 &#8211; Reshape for the robot:** `Object.entries(map)` converts `{food: 35, transport: 23}` into `[['food', 35], ['transport', 23]]`. Then `.map()` transforms each inner array into an object with `category` and `amount` keys:
+### Meal #2: The Daily Trend (`useDailyTotals`)
 
-```ts
-[{ category: 'food', amount: 35 }, { category: 'transport', amount: 23 }]
-```
-
-This exact shape is fed directly into the `PieChart` in `src/components/Analytics.tsx:46-63`:
-
-```ts
-<PieChart>
-  <Pie
-    data={categoryTotals}        // ← the robot-food array
-    dataKey="amount"             // ← which property holds the slice size
-    nameKey="category"           // ← which property is the label
-    innerRadius={60}             // ← makes it a donut (hole in middle)
-    outerRadius={100}
-  >
-    {categoryTotals.map((_, i) => (
-      <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
-    ))}
-  </Pie>
-</PieChart>
-```
-
-Each `Cell` receives a color from the `DONUT_COLORS` palette (`analytics.tsx:15`). The `i % DONUT_COLORS.length` trick means if you somehow have more categories than colors, it loops around (modulo wraps back to the start).
-
-The `CustomTooltip` (`Analytics.tsx:21-34`) extracts `category` and `amount` from the hovered slice&#8217;s `payload` and renders them with proper currency formatting.
-
-### Meal #3: The Bar Chart&#8217;s Breakfast (`useDailyTotals`)
-
-`analytics.ts:64-82`:
+`analytics.ts:75-118`:
 
 ```ts
 export function useDailyTotals(filtered: Expense[]) {
   return useMemo(() => {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
     const today = new Date()
-    const days: { day: string; amount: number }[] = []
+    const days: { day: string; amount: number; dominantCategory: string }[] = []
 
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(today)
-      d.setDate(d.getDate() - i)
-      const iso = d.toISOString().split('T')[0]
-      const dayLabel = dayNames[d.getDay()]
-      const total = filtered
-        .filter((e) => e.date === iso)
-        .reduce((sum, e) => sum + e.amount, 0)
-      days.push({ day: dayLabel, amount: total })
+    const buckets = new Map<string, { total: number; byCategory: Map<string, number> }>()
+    for (const e of filtered) {
+      // ... bucket each expense by date
     }
-
-    return days
-  }, [filtered])
-}
 ```
 
-The robot wants exactly **7 bars**, one for each day of the week, even if you spent $0 that day. Here&#8217;s how we build that guarantee:
+Instead of looping 7 times and filtering the entire array each time (the old O(7n) approach), the function now does **one pass** over `filtered` to build a `Map<date, {total, byCategory}>`. Then a 7-iteration loop reads from the map — O(n) + O(7) instead of O(7n).
 
-**The backward loop:** `for (let i = 6; i >= 0; i--)` counts from 6 down to 0. This means we start with 6 days ago and end with today, building the array left-to-right (oldest day first).
+Each day always gets a bar, even if spending was $0. The function computes a `dominantCategory` per day (the category with the highest total), which is still computed but no longer used for bar coloring — the bars now use a uniform sage fill with a dashed average line instead of the old "color by dominant category" double-encoding.
 
-**Constructing each day:**
+This feeds the `BarCard` component (`src/components/BarCard.tsx`). The chart includes a dashed `ReferenceLine` at the 7-day average so every bar has context — above or below your normal. On mobile, tapping a bar pins a tooltip showing the exact day and amount.
 
-```ts
-const d = new Date(today)
-d.setDate(d.getDate() - i)
-```
+### Meal #3: The Sentence's Secret Sauce (`deriveSentenceState`)
 
-If today is Saturday, and `i = 6`, `d` becomes last Sunday. If `i = 0`, `d` is today (Saturday).
+The sentence header doesn't just display the total — it *interprets* your spending. The `deriveSentenceState` function in `SentenceHeader.tsx:20-57` classifies your data into one of five states:
 
-```ts
-const iso = d.toISOString().split('T')[0]
-```
+| State | Condition | Sentence |
+|---|---|---|
+| `no-expenses` | Zero expenses ever | "Start tracking — your first expense unlocks the dashboard." |
+| `empty-timeframe` | Data exists, none in view | "You kept everything last week — $0 out." |
+| `single-expense` | Exactly one expense | "$42.00 out this week, on food." (no "mostly") |
+| `tied` | Top two categories within 5% | "$150.00 out this week, spread evenly." |
+| `default` | Clear dominant category | "$785.00 out this week, mostly on transport." |
 
-Converts to `"2026-06-07"` format&#8212;matching exactly how dates are stored in our `Expense` objects.
+The 5% tiebreaker (`top[1] - second[1] < top[1] * 0.05`) prevents the app from declaring a "winner" when two categories are essentially equal. Without it, $50.01 vs $49.99 would say "mostly on X" — technically correct, practically misleading.
 
-```ts
-const dayLabel = dayNames[d.getDay()]
-```
+Below the sentence, you get two bonus lines when applicable:
+- A **trend delta**: "↑ $142.00 from last week" (sage when up, red when down)
+- A **budget gauge**: "62% of monthly budget" (red when ≥100%)
 
-`getDay()` returns 0-6 (Sun-Sat), giving us the human-readable label.
+And below all of that, a 4-week **sparkline** (`TrendLine.tsx`) shows your weekly totals as tiny relative-height bars — rising, falling, or steady at a glance.
 
-```ts
-const total = filtered
-  .filter((e) => e.date === iso)
-  .reduce((sum, e) => sum + e.amount, 0)
-```
+### The Assembly Line: End to End
 
-This is a **chained operation**: first `.filter()` picks only expenses matching this specific date, then `.reduce()` sums their amounts. If no expenses match, the filter returns an empty array, and the reduce gracefully produces `0`.
+1. **User types "25", picks "transport", clicks Add Expense.**
+2. `validateExpenseInput` checks: is it a number? Positive? Not a future date? Converts to `amountCents = 2500`.
+3. `onAdd` fires `setExpenses((prev) => [{id, amountCents: 2500, category: 'transport', date}, ...prev])`.
+4. `useLocalStorage`'s `useEffect` persists the new array to localStorage.
+5. React re-renders. `useFilteredExpenses` recalculates `filtered` based on `timeframe`.
+6. `deriveSentenceState` classifies the data and picks a sentence variant.
+7. `useCategoryTotals`, `useDailyTotals`, `useLastWeekCategoryTotals`, and `useWeeklyTrend` each transform `filtered` (or `expenses`) into chart-ready shapes.
+8. `SentenceHeader` renders the sentence with the timeframe button, delta, and budget line. `DonutCard` renders the donut with comparison rings. `BarCard` renders the 7-day bars with the average line. `TrendLine` renders the 4-week sparkline.
+9. Switch to "last week" via the dropdown: `setTimeframe('last-week')` → `useFilteredExpenses` recalculates → every derived value re-flows through the pipeline — all without touching the original expense list.
 
-```ts
-days.push({ day: dayLabel, amount: total })
-```
-
-Each day gets pushed in. The result always looks like:
-
-```ts
-[
-  { day: 'Sun', amount: 0 },
-  { day: 'Mon', amount: 23.45 },
-  { day: 'Tue', amount: 0 },
-  { day: 'Wed', amount: 42.50 },
-  { day: 'Thu', amount: 15 },
-  { day: 'Fri', amount: 0 },
-  { day: 'Sat', amount: 65 },
-]
-```
-
-This feeds the `BarChart` in `Analytics.tsx:72-92`:
-
-```ts
-<BarChart data={dailyTotals}>
-  <XAxis dataKey="day" />          {/* ← bottom labels: Sun, Mon, Tue... */}
-  <YAxis tickFormatter={(v) => `$${v}`} />  {/* ← side labels formatted as dollars */}
-  <Bar dataKey="amount" />         {/* ← bar height comes from the amount property */}
-</BarChart>
-```
-
-The `dataKey="day"` on `XAxis` reads the `day` property from each object for the bottom labels. The `dataKey="amount"` on `Bar` reads the `amount` property for the bar heights. The shape matches perfectly.
-
-### The Assembly Line: How It All Connects
-
-Let&#8217;s trace the full journey one more time, end to end:
-
-1. **User types &#8220;25&#8221;, picks &#8220;food&#8221;, clicks Add Expense.**
-2. `ExpenseForm.handleSubmit` validates, builds `{id, amount: 25, category: 'food', date: '2026-06-07'}`.
-3. `onAdd` fires `setExpenses((prev) => [newExpense, ...prev])` in `App.tsx`.
-4. `useLocalStorage`&#8217;s `useEffect` persists the new array to `localStorage('receipts_data', ...)`.
-5. React re-renders `App`. `useFilteredExpenses` runs (memoized), filtering the full list into `filtered` based on the current timeframe.
-6. `useTotal(filtered)`, `useCategoryTotals(filtered)`, and `useDailyTotals(filtered)` each transform the filtered data into chart-ready shapes.
-7. `Header` displays the total. `Analytics` renders the donut and bar charts with the transformed data.
-8. If the user clicks &#8220;Last Week&#8221; in the Header, `setTimeframe('last-week')` triggers a re-render, `useFilteredExpenses` recalculates, and the entire pipeline re-flows with a narrower window of data&#8212;all without ever touching the original expense list.
-
-That&#8217;s the heartbeat of Receipts: **local-first persistence**, **immutable filtering**, and **pure data transformation**. Every piece knows exactly what shape of data to expect and exactly what shape to produce.
+That's the heartbeat of receipts.me: **local-first persistence**, **pure data transformation**, **integer-cents math**, and a **sentence that reads your spending back to you**.

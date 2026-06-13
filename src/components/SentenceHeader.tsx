@@ -61,6 +61,7 @@ interface SentenceHeaderProps {
   filtered: Expense[]
   timeframe: Timeframe
   lastWeekTotal: number
+  budgets: Record<string, number>
   onTimeframeChange: (t: Timeframe) => void
 }
 
@@ -92,6 +93,7 @@ export default function SentenceHeader({
   filtered,
   timeframe,
   lastWeekTotal,
+  budgets,
   onTimeframeChange,
 }: SentenceHeaderProps) {
   const [dropdownAnchor, setDropdownAnchor] = useState<DOMRect | null>(null)
@@ -212,6 +214,10 @@ export default function SentenceHeader({
     }
   }
 
+  const totalBudget = Object.values(budgets).reduce((sum, v) => sum + v, 0)
+  const budgetPct = totalBudget > 0 ? Math.round((currentTotal / totalBudget) * 100) : 0
+  const showBudget = hasCurrentData && totalBudget > 0
+
   return (
     <>
       <p className="text-text-primary text-2xl md:text-3xl font-sans leading-snug max-w-[800px]">
@@ -220,6 +226,14 @@ export default function SentenceHeader({
 
       {deltaNode && (
         <p className="mt-1">{deltaNode}</p>
+      )}
+
+      {showBudget && (
+        <p className="mt-1">
+          <span className={`font-mono text-sm ${budgetPct >= 100 ? 'text-status-error' : 'text-text-muted'}`}>
+            {budgetPct}% of monthly budget
+          </span>
+        </p>
       )}
 
       <TimeframeDropdown

@@ -116,3 +116,39 @@ export function useDailyTotals(filtered: Expense[]) {
     return days
   }, [filtered])
 }
+
+export function useWeeklyTrend(expenses: Expense[]) {
+  return useMemo(() => {
+    const weeks: { label: string; amount: number }[] = []
+    const now = new Date()
+    const thisMonday = new Date(now)
+    const day = now.getDay()
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1)
+    thisMonday.setDate(diff)
+    thisMonday.setHours(0, 0, 0, 0)
+
+    for (let w = 3; w >= 0; w--) {
+      const weekStart = new Date(thisMonday)
+      weekStart.setDate(weekStart.getDate() - w * 7)
+      const weekEnd = new Date(weekStart)
+      weekEnd.setDate(weekEnd.getDate() + 6)
+      weekEnd.setHours(23, 59, 59, 999)
+
+      const total = expenses
+        .filter((e) => {
+          const d = new Date(e.date)
+          return d >= weekStart && d <= weekEnd
+        })
+        .reduce((sum, e) => sum + e.amountCents, 0)
+
+      const weekLabel = new Intl.DateTimeFormat(navigator.language || 'en-US', {
+        month: 'short',
+        day: 'numeric',
+      }).format(weekStart)
+
+      weeks.push({ label: weekLabel, amount: total })
+    }
+
+    return weeks
+  }, [expenses])
+}
