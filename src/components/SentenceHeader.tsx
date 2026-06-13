@@ -1,19 +1,8 @@
 import { useState } from 'react'
 import type { Expense, Timeframe, Category } from '../types'
 import { formatCents } from '../lib/format'
+import { CATEGORY_COLORS } from '../lib/constants'
 import TimeframeDropdown from './TimeframeDropdown'
-
-const CATEGORY_COLORS: Record<string, string> = {
-  food: '#9F1239',
-  transport: '#1E40AF',
-  housing: '#0F766E',
-  bills: '#475569',
-  health: '#047857',
-  shopping: '#9D174D',
-  fun: '#A16207',
-  data: '#5B21B6',
-  other: '#52525B',
-}
 
 const TIMEFRAME_LABEL: Record<Timeframe, string> = {
   'this-week': 'week',
@@ -71,13 +60,29 @@ interface SentenceHeaderProps {
   allExpenses: Expense[]
   filtered: Expense[]
   timeframe: Timeframe
+  lastWeekTotal: number
   onTimeframeChange: (t: Timeframe) => void
 }
 
 function Amount({ value }: { value: number }) {
   return (
-    <span className="text-brand font-mono text-4xl md:text-6xl font-medium tracking-tight">
+    <span
+      key={value}
+      className="text-brand font-mono text-4xl md:text-6xl font-medium tracking-tight inline-block animate-[amount-in_300ms_ease-out] motion-reduce:animate-none"
+    >
       {formatCents(value)}
+    </span>
+  )
+}
+
+function CategoryLabel({ category }: { category: Category }) {
+  const color = CATEGORY_COLORS[category] || CATEGORY_COLORS.other
+  return (
+    <span
+      className="font-medium underline decoration-2 underline-offset-4"
+      style={{ color, textDecorationColor: color }}
+    >
+      {category}
     </span>
   )
 }
@@ -86,36 +91,23 @@ export default function SentenceHeader({
   allExpenses,
   filtered,
   timeframe,
+  lastWeekTotal,
   onTimeframeChange,
 }: SentenceHeaderProps) {
   const [dropdownAnchor, setDropdownAnchor] = useState<DOMRect | null>(null)
 
   const state = deriveSentenceState(allExpenses, filtered, timeframe)
+  const dropdownOpen = dropdownAnchor !== null
 
   const handleTimeframeClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    setDropdownAnchor(e.currentTarget.getBoundingClientRect())
+    if (dropdownOpen) {
+      setDropdownAnchor(null)
+    } else {
+      setDropdownAnchor(e.currentTarget.getBoundingClientRect())
+    }
   }
 
-  const TimeframeWord = ({ timeframe }: { timeframe: Timeframe }) => (
-    <button
-      onClick={handleTimeframeClick}
-      className="font-medium underline decoration-brand decoration-2 underline-offset-4 hover:opacity-90 transition-opacity motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded"
-    >
-      {timeframe === 'this-week' ? 'week' : TIMEFRAME_LABEL[timeframe]}
-    </button>
-  )
-
-  const CategoryWord = ({ category }: { category: Category }) => {
-    const color = CATEGORY_COLORS[category] || CATEGORY_COLORS.other
-    return (
-      <span
-        className="font-medium underline decoration-2 underline-offset-4"
-        style={{ color, textDecorationColor: color }}
-      >
-        {category}
-      </span>
-    )
-  }
+  const timeframeLabel = timeframe === 'this-week' ? 'week' : TIMEFRAME_LABEL[timeframe]
 
   let content: React.ReactNode
 
@@ -125,18 +117,49 @@ export default function SentenceHeader({
     )
   } else if (state.kind === 'empty-timeframe') {
     if (state.timeframe === 'last-week') {
-      content = <>You kept everything <TimeframeWord timeframe="last-week" /> &mdash; $0 out.</>
+      content = (
+        <>You kept everything{' '}
+          <button
+            onClick={handleTimeframeClick}
+            aria-expanded={dropdownOpen}
+            className="font-medium underline decoration-brand decoration-2 underline-offset-4 hover:opacity-90 transition-opacity motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded"
+          >last week</button>{' '}
+          &mdash; $0 out.
+        </>
+      )
     } else if (state.timeframe === 'this-week') {
-      content = <>You haven&rsquo;t spent anything this <TimeframeWord timeframe="this-week" /> yet.</>
+      content = (
+        <>You haven&rsquo;t spent anything this{' '}
+          <button
+            onClick={handleTimeframeClick}
+            aria-expanded={dropdownOpen}
+            className="font-medium underline decoration-brand decoration-2 underline-offset-4 hover:opacity-90 transition-opacity motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded"
+          >week</button>{' '}
+          yet.
+        </>
+      )
     } else {
-      content = <>Nothing tracked <TimeframeWord timeframe="all-time" /> yet.</>
+      content = (
+        <>Nothing tracked{' '}
+          <button
+            onClick={handleTimeframeClick}
+            aria-expanded={dropdownOpen}
+            className="font-medium underline decoration-brand decoration-2 underline-offset-4 hover:opacity-90 transition-opacity motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded"
+          >all time</button>{' '}
+          yet.
+        </>
+      )
     }
   } else if (state.kind === 'single-expense') {
     content = (
       <>
         <Amount value={state.amount} />{' '}
         out {state.timeframe === 'this-week' ? 'this ' : ''}
-        <TimeframeWord timeframe={state.timeframe} />, on <CategoryWord category={state.category} />.
+        <button
+          onClick={handleTimeframeClick}
+          aria-expanded={dropdownOpen}
+          className="font-medium underline decoration-brand decoration-2 underline-offset-4 hover:opacity-90 transition-opacity motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded"
+        >{timeframeLabel}</button>, on <CategoryLabel category={state.category} />.
       </>
     )
   } else if (state.kind === 'tied') {
@@ -144,7 +167,11 @@ export default function SentenceHeader({
       <>
         <Amount value={state.amount} />{' '}
         out {state.timeframe === 'this-week' ? 'this ' : ''}
-        <TimeframeWord timeframe={state.timeframe} />, spread evenly.
+        <button
+          onClick={handleTimeframeClick}
+          aria-expanded={dropdownOpen}
+          className="font-medium underline decoration-brand decoration-2 underline-offset-4 hover:opacity-90 transition-opacity motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded"
+        >{timeframeLabel}</button>, spread evenly.
       </>
     )
   } else {
@@ -152,9 +179,37 @@ export default function SentenceHeader({
       <>
         <Amount value={state.amount} />{' '}
         out {state.timeframe === 'this-week' ? 'this ' : ''}
-        <TimeframeWord timeframe={state.timeframe} />, mostly on <CategoryWord category={state.category} />.
+        <button
+          onClick={handleTimeframeClick}
+          aria-expanded={dropdownOpen}
+          className="font-medium underline decoration-brand decoration-2 underline-offset-4 hover:opacity-90 transition-opacity motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded"
+        >{timeframeLabel}</button>, mostly on <CategoryLabel category={state.category} />.
       </>
     )
+  }
+
+  const hasCurrentData = state.kind !== 'no-expenses' && state.kind !== 'empty-timeframe'
+  const currentTotal = hasCurrentData ? state.amount : 0
+  const showDelta = hasCurrentData && lastWeekTotal > 0
+
+  let deltaNode: React.ReactNode = null
+  if (showDelta) {
+    const diff = currentTotal - lastWeekTotal
+    if (diff === 0) {
+      deltaNode = <span className="text-text-muted font-mono text-sm">&mdash; same as last week</span>
+    } else if (diff > 0) {
+      deltaNode = (
+        <span className="text-brand font-mono text-sm">
+          &#8593; {formatCents(diff)} from last week
+        </span>
+      )
+    } else {
+      deltaNode = (
+        <span className="text-status-error font-mono text-sm">
+          &#8595; {formatCents(Math.abs(diff))} from last week
+        </span>
+      )
+    }
   }
 
   return (
@@ -162,6 +217,10 @@ export default function SentenceHeader({
       <p className="text-text-primary text-2xl md:text-3xl font-sans leading-snug max-w-[800px]">
         {content}
       </p>
+
+      {deltaNode && (
+        <p className="mt-1">{deltaNode}</p>
+      )}
 
       <TimeframeDropdown
         current={timeframe}

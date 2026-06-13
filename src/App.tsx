@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { Expense, Timeframe } from './types'
 import { useLocalStorage } from './useLocalStorage'
-import { useFilteredExpenses } from './analytics'
+import { useFilteredExpenses, useTotal } from './analytics'
 import { ExpensesSchema } from './lib/validation'
 import CornerMark from './components/CornerMark'
 import SentenceHeader from './components/SentenceHeader'
@@ -33,6 +33,7 @@ export default function App() {
   }, [])
 
   const filtered = useFilteredExpenses(expenses, timeframe)
+  const lastWeekTotal = useTotal(useFilteredExpenses(expenses, 'last-week'))
 
   const handleAdd = (expense: Expense) => {
     setExpenses((prev) => [expense, ...prev])
@@ -75,28 +76,34 @@ export default function App() {
   return (
     <>
       <div className="min-h-screen bg-bg-base text-text-primary font-sans">
+
+        <header className="sticky top-0 z-40 bg-bg-base/80 backdrop-blur-md border-b border-bg-border/40">
+          <div className="max-w-6xl mx-auto px-4 md:px-6 py-4">
+            <CornerMark />
+          </div>
+        </header>
+
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-6 md:py-8">
 
-          <div className="space-y-6 md:space-y-8 mb-8 md:mb-10">
-            <CornerMark />
+          <div className="mb-8 md:mb-10">
             <SentenceHeader
               allExpenses={expenses}
               filtered={filtered}
               timeframe={timeframe}
+              lastWeekTotal={lastWeekTotal}
               onTimeframeChange={setTimeframe}
             />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ExpenseForm onAdd={handleAdd} />
-            <DonutCard filtered={filtered} hasData={hasData} />
-            <ListCard
+            <div className="order-2 lg:order-1"><ExpenseForm onAdd={handleAdd} /></div>
+            <div className="order-1 lg:order-2"><DonutCard filtered={filtered} allExpenses={expenses} hasData={hasData} /></div>
+            <div className="order-3"><ListCard
               filtered={filtered}
-              timeframe={timeframe}
               allExpenses={expenses}
               onRowClick={setEditingExpense}
-            />
-            <BarCard filtered={filtered} hasData={hasData} />
+            /></div>
+            <div className="order-4"><BarCard filtered={filtered} hasData={hasData} /></div>
           </div>
 
         </div>

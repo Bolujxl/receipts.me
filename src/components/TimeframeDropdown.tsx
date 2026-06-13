@@ -24,7 +24,30 @@ export default function TimeframeDropdown({
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (!menuRef.current) return
+
+      const items = menuRef.current.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')
+      const currentIndex = Array.from(items).findIndex((el) => el === document.activeElement)
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        const next = (currentIndex + 1) % items.length
+        items[next]?.focus()
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        const prev = (currentIndex - 1 + items.length) % items.length
+        items[prev]?.focus()
+      } else if (e.key === 'Home') {
+        e.preventDefault()
+        items[0]?.focus()
+      } else if (e.key === 'End') {
+        e.preventDefault()
+        items[items.length - 1]?.focus()
+      }
     }
     document.addEventListener('keydown', handleKey)
     return () => document.removeEventListener('keydown', handleKey)
@@ -60,7 +83,7 @@ export default function TimeframeDropdown({
       role="menu"
       aria-orientation="vertical"
       style={style}
-      className="bg-bg-elevated border border-bg-border rounded-lg shadow-xl py-1.5 min-w-[160px]"
+      className="bg-bg-elevated border border-bg-border rounded-lg shadow-xl py-1.5 min-w-[160px] animate-[slide-in_150ms_ease-out] motion-reduce:animate-none"
     >
       {OPTIONS.map((option) => {
         const isActive = option.value === current

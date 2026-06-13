@@ -16,3 +16,17 @@ export function formatDate(iso: string): string {
     day: 'numeric',
   })
 }
+
+export function validateExpenseInput(amount: string, date: string): { amountCents: number; error?: string } {
+  const todayISO = new Date().toLocaleDateString('en-CA')
+
+  const parsed = parseFloat(amount)
+  if (isNaN(parsed) || parsed <= 0) {
+    return { amountCents: 0, error: 'Enter a positive amount.' }
+  }
+  if (date > todayISO) {
+    return { amountCents: 0, error: 'Future dates are not allowed.' }
+  }
+
+  return { amountCents: Math.round(parsed * 100) }
+}

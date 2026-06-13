@@ -1,19 +1,7 @@
-import { BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
 import { useDailyTotals } from '../analytics'
 import { formatCents } from '../lib/format'
 import type { Expense } from '../types'
-
-const CATEGORY_COLORS: Record<string, string> = {
-  food: '#9F1239',
-  transport: '#1E40AF',
-  housing: '#0F766E',
-  bills: '#475569',
-  health: '#047857',
-  shopping: '#9D174D',
-  fun: '#A16207',
-  data: '#5B21B6',
-  other: '#52525B',
-}
 
 interface BarCardProps {
   filtered: Expense[]
@@ -34,6 +22,10 @@ function DayTooltip({ active, payload }: any) {
 export default function BarCard({ filtered, hasData }: BarCardProps) {
   const dailyTotals = useDailyTotals(filtered)
 
+  const average = dailyTotals.length > 0
+    ? dailyTotals.reduce((sum, d) => sum + d.amount, 0) / dailyTotals.length
+    : 0
+
   return (
     <div className="bg-bg-surface border border-bg-border rounded-xl p-6 flex flex-col">
       <h2 className="text-text-muted text-xs tracking-wider uppercase mb-4">
@@ -42,7 +34,7 @@ export default function BarCard({ filtered, hasData }: BarCardProps) {
 
       <div className="flex-1 min-h-[240px] flex items-center justify-center">
         {!hasData ? (
-          <p className="text-text-faint text-sm">Add an expense to see the trend.</p>
+          <p className="text-text-faint text-sm">Add your first expense to see the trend.</p>
         ) : filtered.length === 0 ? (
           <p className="text-text-faint text-sm">No expenses in this timeframe.</p>
         ) : (
@@ -65,18 +57,13 @@ export default function BarCard({ filtered, hasData }: BarCardProps) {
                 width={70}
               />
               <Tooltip content={<DayTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-              <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={40}>
-                {dailyTotals.map((entry, i) => (
-                  <Cell
-                    key={i}
-                    fill={
-                      entry.amount === 0
-                        ? '#27272A'
-                        : CATEGORY_COLORS[entry.dominantCategory] || CATEGORY_COLORS.other
-                    }
-                  />
-                ))}
-              </Bar>
+              <ReferenceLine
+                y={average}
+                stroke="#52525B"
+                strokeDasharray="4 4"
+                strokeWidth={1}
+              />
+              <Bar dataKey="amount" radius={[4, 4, 0, 0]} maxBarSize={40} fill="#7C9F3F" />
             </BarChart>
           </ResponsiveContainer>
         )}

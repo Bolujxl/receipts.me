@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { Category, Expense } from '../types'
 import { CATEGORIES } from '../types'
+import { validateExpenseInput } from '../lib/format'
 
 interface ExpenseEditModalProps {
   expense: Expense | null
@@ -8,8 +9,6 @@ interface ExpenseEditModalProps {
   onSave: (updated: Expense) => void
   onDelete: (id: string) => void
 }
-
-const todayISO = new Date().toLocaleDateString('en-CA')
 
 export default function ExpenseEditModal({
   expense,
@@ -19,7 +18,7 @@ export default function ExpenseEditModal({
 }: ExpenseEditModalProps) {
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState<Category>('food')
-  const [date, setDate] = useState(todayISO)
+  const [date, setDate] = useState(() => new Date().toLocaleDateString('en-CA'))
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -40,24 +39,19 @@ export default function ExpenseEditModal({
     return () => document.removeEventListener('keydown', handleKey)
   }, [expense, onClose])
 
-  if (!expense) return null
+  const open = expense !== null
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
 
-    const parsed = parseFloat(amount)
-    if (isNaN(parsed) || parsed <= 0) {
-      setError('Enter a positive amount.')
-      return
-    }
-    if (date > todayISO) {
-      setError('Future dates are not allowed.')
+    const { amountCents, error: validationError } = validateExpenseInput(amount, date)
+    if (validationError) {
+      setError(validationError)
       return
     }
 
-    const amountCents = Math.round(parsed * 100)
     const updated: Expense = {
-      id: expense.id,
+      id: expense!.id,
       amountCents,
       category,
       date,
@@ -67,20 +61,25 @@ export default function ExpenseEditModal({
   }
 
   const handleDelete = () => {
-    onDelete(expense.id)
+    onDelete(expense!.id)
     onClose()
   }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-200 motion-reduce:transition-none ${
+        open ? 'opacity-100 visible' : 'opacity-0 invisible'
+      }`}
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="edit-modal-title"
     >
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
       <div
-        className="bg-bg-surface border border-bg-border rounded-xl p-6 w-full max-w-md"
+        className={`bg-bg-surface border border-bg-border rounded-xl p-6 w-full max-w-md relative transition-all duration-200 motion-reduce:transition-none ${
+          open ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-6">
@@ -110,7 +109,7 @@ export default function ExpenseEditModal({
                 step="0.01"
                 min="0.01"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
                 autoFocus
                 className="w-full bg-bg-base border border-bg-border rounded-lg py-3 pl-8 pr-4 text-text-primary text-lg font-mono placeholder:text-text-faint focus:outline-none focus:border-brand transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
@@ -141,7 +140,7 @@ export default function ExpenseEditModal({
             <input
               type="date"
               value={date}
-              max={todayISO}
+              max={new Date().toLocaleDateString('en-CA')}
               onChange={(e) => setDate(e.target.value)}
               className="w-full bg-bg-base border border-bg-border rounded-lg py-3 px-4 text-text-primary font-mono focus:outline-none focus:border-brand transition-colors"
             />

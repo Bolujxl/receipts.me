@@ -61,37 +61,56 @@ export function useCategoryTotals(filtered: Expense[]) {
   }, [filtered])
 }
 
+export function useLastWeekCategoryTotals(allExpenses: Expense[]) {
+  return useMemo(() => {
+    const lastWeekFiltered = filterByTimeframe(allExpenses, 'last-week')
+    const map: Record<string, number> = {}
+    for (const e of lastWeekFiltered) {
+      map[e.category] = (map[e.category] || 0) + e.amountCents
+    }
+    return Object.entries(map).map(([category, amount]) => ({ category, amount }))
+  }, [allExpenses])
+}
+
 export function useDailyTotals(filtered: Expense[]) {
-  // TODO [Audit 03 §3 / Cross-check B]: pre-bucket expenses by date in a single O(n) pass
   return useMemo(() => {
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
     const today = new Date()
     const days: { day: string; amount: number; dominantCategory: string }[] = []
+
+    const buckets = new Map<string, { total: number; byCategory: Map<string, number> }>()
+    for (const e of filtered) {
+      let bucket = buckets.get(e.date)
+      if (!bucket) {
+        bucket = { total: 0, byCategory: new Map() }
+        buckets.set(e.date, bucket)
+      }
+      bucket.total += e.amountCents
+      bucket.byCategory.set(e.category, (bucket.byCategory.get(e.category) || 0) + e.amountCents)
+    }
 
     for (let i = 6; i >= 0; i--) {
       const d = new Date(today)
       d.setDate(d.getDate() - i)
       const iso = d.toISOString().split('T')[0]
       const dayLabel = dayNames[d.getDay()]
-      const dayExpenses = filtered.filter((e) => e.date === iso)
-      const total = dayExpenses.reduce((sum, e) => sum + e.amountCents, 0)
+      const bucket = buckets.get(iso)
+
+      if (!bucket) {
+        days.push({ day: dayLabel, amount: 0, dominantCategory: 'other' })
+        continue
+      }
 
       let dominantCategory = 'other'
-      if (dayExpenses.length > 0) {
-        const catMap: Record<string, number> = {}
-        for (const e of dayExpenses) {
-          catMap[e.category] = (catMap[e.category] || 0) + e.amountCents
-        }
-        let maxAmount = 0
-        for (const [cat, amt] of Object.entries(catMap)) {
-          if (amt > maxAmount) {
-            maxAmount = amt
-            dominantCategory = cat
-          }
+      let maxAmount = 0
+      for (const [cat, amt] of bucket.byCategory) {
+        if (amt > maxAmount) {
+          maxAmount = amt
+          dominantCategory = cat
         }
       }
 
-      days.push({ day: dayLabel, amount: total, dominantCategory })
+      days.push({ day: dayLabel, amount: bucket.total, dominantCategory })
     }
 
     return days

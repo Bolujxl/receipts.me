@@ -33,6 +33,7 @@ export function useLocalStorage<T>(
   }, [key, value])
 
   const set = useCallback((val: T | ((prev: T) => T)) => {
+    // Stable deps: setValue is React's useState setter — guaranteed stable across renders
     setValue(val)
   }, [])
 

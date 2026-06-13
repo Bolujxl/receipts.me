@@ -1,38 +1,30 @@
 import { useState } from 'react'
 import type { Category, Expense } from '../types'
 import { CATEGORIES } from '../types'
+import { validateExpenseInput } from '../lib/format'
 
 interface ExpenseFormProps {
   onAdd: (expense: Expense) => void
 }
 
-const todayISO = new Date().toISOString().split('T')[0]
-
 export default function ExpenseForm({ onAdd }: ExpenseFormProps) {
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState<Category>('food')
-  const [date, setDate] = useState(todayISO)
+  const [date, setDate] = useState(() => new Date().toLocaleDateString('en-CA'))
   const [error, setError] = useState('')
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
-    const parsed = parseFloat(amount)
-    if (isNaN(parsed) || parsed <= 0) {
-      setError('Enter a positive amount.')
+    const { amountCents, error: validationError } = validateExpenseInput(amount, date)
+    if (validationError) {
+      setError(validationError)
       return
     }
-
-    if (date > todayISO) {
-      setError('Future dates are not allowed.')
-      return
-    }
-
-    const amountCents = Math.round(parsed * 100)
 
     try {
       onAdd({
-        id: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        id: crypto.randomUUID(),
         amountCents,
         category,
         date,
@@ -44,15 +36,14 @@ export default function ExpenseForm({ onAdd }: ExpenseFormProps) {
     }
 
     setAmount('')
-    setCategory('food')
-    setDate(todayISO)
+    setDate(new Date().toLocaleDateString('en-CA'))
     setError('')
   }
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-bg-surface border border-bg-border p-6 rounded-xl space-y-4 min-h-[300px] flex flex-col"
+      className="bg-bg-surface border border-bg-border p-6 rounded-xl space-y-4"
     >
       <div className="space-y-1.5">
         <label className="text-text-muted text-xs tracking-wider uppercase">Amount</label>
@@ -65,7 +56,7 @@ export default function ExpenseForm({ onAdd }: ExpenseFormProps) {
             min="0.01"
             placeholder="0.00"
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
             className="w-full bg-bg-base border border-bg-border rounded-lg py-3 pl-8 pr-4 text-text-primary text-lg placeholder:text-text-faint focus:outline-none focus:border-brand transition-colors font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
           />
         </div>
@@ -91,7 +82,7 @@ export default function ExpenseForm({ onAdd }: ExpenseFormProps) {
         <input
           type="date"
           value={date}
-          max={todayISO}
+          max={new Date().toLocaleDateString('en-CA')}
           onChange={(e) => setDate(e.target.value)}
           className="w-full bg-bg-base border border-bg-border rounded-lg py-3 px-4 text-text-primary focus:outline-none focus:border-brand transition-colors color-scheme:dark"
         />
@@ -100,8 +91,6 @@ export default function ExpenseForm({ onAdd }: ExpenseFormProps) {
       {error && (
         <p className="text-status-error text-xs">{error}</p>
       )}
-
-      <div className="flex-1" />
 
       <button
         type="submit"

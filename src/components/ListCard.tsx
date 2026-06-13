@@ -1,21 +1,9 @@
-import type { Expense, Timeframe } from '../types'
+import type { Expense } from '../types'
 import { formatCents, formatDate } from '../lib/format'
-
-const CATEGORY_COLORS: Record<string, string> = {
-  food: '#9F1239',
-  transport: '#1E40AF',
-  housing: '#0F766E',
-  bills: '#475569',
-  health: '#047857',
-  shopping: '#9D174D',
-  fun: '#A16207',
-  data: '#5B21B6',
-  other: '#52525B',
-}
+import { CATEGORY_COLORS } from '../lib/constants'
 
 interface ListCardProps {
   filtered: Expense[]
-  timeframe: Timeframe
   allExpenses: Expense[]
   onRowClick: (expense: Expense) => void
 }
@@ -44,7 +32,7 @@ export default function ListCard({ filtered, allExpenses, onRowClick }: ListCard
       <div className="flex-1 min-h-0">
         {!hasAnyData ? (
           <p className="text-text-faint text-sm py-8 text-center">
-            Your expenses will appear here.
+            Add your first expense to see it here.
           </p>
         ) : sorted.length === 0 ? (
           <p className="text-text-faint text-sm py-8 text-center">
@@ -57,6 +45,7 @@ export default function ListCard({ filtered, allExpenses, onRowClick }: ListCard
                 <li key={expense.id}>
                   <button
                     onClick={() => onRowClick(expense)}
+                    aria-label={`Edit ${formatCents(expense.amountCents)} ${expense.category} expense from ${formatDate(expense.date)}`}
                     className="w-full flex items-center gap-3 py-2.5 text-left hover:bg-bg-elevated/40 rounded-lg px-2 -mx-2 transition-colors motion-reduce:transition-none"
                   >
                     <div
