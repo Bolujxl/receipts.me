@@ -61,19 +61,19 @@ export default function BarCard({ filtered, hasData, className }: BarCardProps) 
                     dataKey="day"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: '#71717A', fontSize: 11 }}
+                    tick={{ fill: 'rgb(var(--text-faint))', fontSize: 11 }}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: '#71717A', fontSize: 11 }}
+                    tick={{ fill: 'rgb(var(--text-faint))', fontSize: 11 }}
                     tickFormatter={(v: number) => formatCents(v)}
                     width={70}
                   />
-                  <Tooltip content={<DayTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-                  <ReferenceLine
-                    y={average}
-                    stroke="#52525B"
+              <Tooltip content={<DayTooltip />} cursor={{ fill: 'rgb(var(--text-primary) / 0.04)' }} />
+              <ReferenceLine
+                y={average}
+                stroke="rgb(var(--text-muted))"
                     strokeDasharray="4 4"
                     strokeWidth={1}
                   />

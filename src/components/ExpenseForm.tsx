@@ -95,7 +95,7 @@ export default function ExpenseForm({ onAdd, className }: ExpenseFormProps) {
 
       <button
         type="submit"
-        className="w-full bg-brand text-brand-text-on font-medium py-3 rounded-lg hover:bg-brand-hover transition-colors duration-150"
+        className="w-full bg-brand text-brand-text-on font-medium py-3 rounded-lg hover:bg-brand-hover active:scale-[0.98] transition-all duration-150"
       >
         Add Expense
       </button>

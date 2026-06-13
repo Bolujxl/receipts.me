@@ -124,7 +124,7 @@ export default function SentenceHeader({
           <button
             onClick={handleTimeframeClick}
             aria-expanded={dropdownOpen}
-            className="font-medium underline decoration-brand decoration-2 underline-offset-4 hover:opacity-90 transition-opacity motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded"
+            className="font-medium underline decoration-brand decoration-2 underline-offset-4 hover:opacity-90 transition-opacity motion-reduce:transition-none active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded"
           >last week</button>{' '}
           &mdash; $0 out.
         </>
@@ -135,7 +135,7 @@ export default function SentenceHeader({
           <button
             onClick={handleTimeframeClick}
             aria-expanded={dropdownOpen}
-            className="font-medium underline decoration-brand decoration-2 underline-offset-4 hover:opacity-90 transition-opacity motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded"
+            className="font-medium underline decoration-brand decoration-2 underline-offset-4 hover:opacity-90 transition-opacity motion-reduce:transition-none active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded"
           >week</button>{' '}
           yet.
         </>
@@ -146,7 +146,7 @@ export default function SentenceHeader({
           <button
             onClick={handleTimeframeClick}
             aria-expanded={dropdownOpen}
-            className="font-medium underline decoration-brand decoration-2 underline-offset-4 hover:opacity-90 transition-opacity motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded"
+            className="font-medium underline decoration-brand decoration-2 underline-offset-4 hover:opacity-90 transition-opacity motion-reduce:transition-none active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded"
           >all time</button>{' '}
           yet.
         </>
@@ -160,7 +160,7 @@ export default function SentenceHeader({
         <button
           onClick={handleTimeframeClick}
           aria-expanded={dropdownOpen}
-          className="font-medium underline decoration-brand decoration-2 underline-offset-4 hover:opacity-90 transition-opacity motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded"
+          className="font-medium underline decoration-brand decoration-2 underline-offset-4 hover:opacity-90 transition-opacity motion-reduce:transition-none active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded"
         >{timeframeLabel}</button>, on <CategoryLabel category={state.category} />.
       </>
     )
@@ -172,7 +172,7 @@ export default function SentenceHeader({
         <button
           onClick={handleTimeframeClick}
           aria-expanded={dropdownOpen}
-          className="font-medium underline decoration-brand decoration-2 underline-offset-4 hover:opacity-90 transition-opacity motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded"
+          className="font-medium underline decoration-brand decoration-2 underline-offset-4 hover:opacity-90 transition-opacity motion-reduce:transition-none active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded"
         >{timeframeLabel}</button>, spread evenly.
       </>
     )
@@ -184,7 +184,7 @@ export default function SentenceHeader({
         <button
           onClick={handleTimeframeClick}
           aria-expanded={dropdownOpen}
-          className="font-medium underline decoration-brand decoration-2 underline-offset-4 hover:opacity-90 transition-opacity motion-reduce:transition-none focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded"
+          className="font-medium underline decoration-brand decoration-2 underline-offset-4 hover:opacity-90 transition-opacity motion-reduce:transition-none active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded"
         >{timeframeLabel}</button>, mostly on <CategoryLabel category={state.category} />.
       </>
     )
@@ -225,11 +225,11 @@ export default function SentenceHeader({
       </p>
 
       {deltaNode && (
-        <p className="mt-1">{deltaNode}</p>
+        <p className="mt-1 animate-[fade-in_200ms_ease-out] motion-reduce:animate-none">{deltaNode}</p>
       )}
 
       {showBudget && (
-        <p className="mt-1">
+        <p className="mt-1 animate-[fade-in_200ms_ease-out] motion-reduce:animate-none">
           <span className={`font-mono text-sm ${budgetPct >= 100 ? 'text-status-error' : 'text-text-muted'}`}>
             {budgetPct}% of monthly budget
           </span>

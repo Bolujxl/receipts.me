@@ -13,7 +13,12 @@ export default function UndoToast({
   onDismiss,
   duration = 5000,
 }: UndoToastProps) {
-  const [visible, setVisible] = useState(true)
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setVisible(true))
+    return () => cancelAnimationFrame(frame)
+  }, [])
 
   useEffect(() => {
     const timer = setTimeout(() => {

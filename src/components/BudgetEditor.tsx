@@ -96,7 +96,7 @@ export default function BudgetEditor({ budgets, onSave, onClose }: BudgetEditorP
           <button
             type="button"
             onClick={handleSave}
-            className="flex-1 px-5 py-2.5 bg-brand hover:bg-brand-hover text-brand-text-on rounded-lg transition-colors text-sm font-medium"
+            className="flex-1 px-5 py-2.5 bg-brand hover:bg-brand-hover active:scale-[0.98] text-brand-text-on rounded-lg transition-all duration-150 text-sm font-medium"
           >
             Save
           </button>

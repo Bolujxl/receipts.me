@@ -48,7 +48,7 @@ export default function ListCard({ filtered, allExpenses, onRowClick, className 
               <button
                 key={cat}
                 onClick={() => setActiveCategory(isActive ? null : cat)}
-                className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-opacity ${
+                className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-all active:scale-[0.96] ${
                   isActive ? 'opacity-100 bg-bg-elevated' : 'opacity-40 hover:opacity-70'
                 }`}
               >

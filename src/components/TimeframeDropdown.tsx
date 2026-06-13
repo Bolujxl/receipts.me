@@ -96,7 +96,7 @@ export default function TimeframeDropdown({
               onClose()
             }}
             className={`
-              w-full flex items-center justify-between gap-3 px-3 py-2 text-sm transition-colors
+              w-full flex items-center justify-between gap-3 px-3 py-2 text-sm transition-all active:scale-[0.98]
               ${isActive
                 ? 'bg-brand/15 text-brand font-medium'
                 : 'text-text-secondary hover:bg-bg-surface'

@@ -154,7 +154,7 @@ export default function ExpenseEditModal({
             <button
               type="button"
               onClick={handleDelete}
-              className="px-4 py-2.5 text-status-error hover:bg-status-error/10 rounded-lg transition-colors text-sm font-medium"
+              className="px-4 py-2.5 text-status-error hover:bg-status-error/10 active:scale-[0.98] rounded-lg transition-all duration-150 text-sm font-medium"
             >
               Delete
             </button>
@@ -162,13 +162,13 @@ export default function ExpenseEditModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 text-text-muted hover:text-text-primary transition-colors text-sm font-medium"
+              className="px-4 py-2.5 text-text-muted hover:text-text-primary active:scale-[0.98] transition-all duration-150 text-sm font-medium"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 bg-brand hover:bg-brand-hover text-brand-text-on rounded-lg transition-colors text-sm font-medium"
+              className="px-5 py-2.5 bg-brand hover:bg-brand-hover active:scale-[0.98] text-brand-text-on rounded-lg transition-all duration-150 text-sm font-medium"
             >
               Save
             </button>

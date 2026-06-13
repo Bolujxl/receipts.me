@@ -4,7 +4,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   housing: '#0F766E',
   bills: '#475569',
   health: '#047857',
-  shopping: '#9D174D',
+  shopping: '#0369A1',
   fun: '#A16207',
   data: '#5B21B6',
   other: '#52525B',

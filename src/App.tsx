@@ -108,7 +108,7 @@ export default function App() {
     <>
       <div className="min-h-screen bg-bg-base text-text-primary font-sans">
 
-        <header className="sticky top-0 z-40 bg-bg-base/80 backdrop-blur-md border-b border-bg-border/40">
+        <header className="sticky top-0 z-40 bg-bg-base/80 backdrop-blur-md border-b border-bg-border/40 shadow-sm">
           <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
             <CornerMark />
             <div className="flex items-center gap-3">

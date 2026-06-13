@@ -46,7 +46,7 @@
   --cat-housing: 15 118 110;        /* #0F766E — teal-700 */
   --cat-bills: 71 85 105;           /* #475569 — slate-600 */
   --cat-health: 4 120 87;           /* #047857 — emerald-700 */
-  --cat-shopping: 157 23 77;        /* #9D174D — pink-800 */
+  --cat-shopping: 3 105 161;        /* #0369A1 — sky-700 */
   --cat-fun: 161 98 7;              /* #A16207 — amber-700 (burnished gold) */
   --cat-data: 91 33 182;            /* #5B21B6 — violet-800 (bruised purple) */
   --cat-other: 82 82 91;            /* #52525B — zinc-600 (neutral) */
@@ -56,4 +56,27 @@
   --status-success: 124 159 63;     /* sage — reuses brand for success */
   --status-warning: 217 119 6;      /* #D97706 — amber-600 */
   --status-error: 220 38 38;        /* #DC2626 — red-600 */
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --brand: 124 159 63;
+    --brand-hover: 107 139 54;
+    --brand-muted: 124 159 63;
+    --brand-text-on: 255 255 255;
+
+    --bg-base: 250 250 250;         /* #FAFAFA */
+    --bg-surface: 255 255 255;      /* #FFFFFF */
+    --bg-elevated: 244 244 245;     /* #F4F4F5 */
+    --bg-border: 228 228 231;       /* #E4E4E7 */
+
+    --text-primary: 24 24 27;       /* #18181B */
+    --text-secondary: 39 39 42;     /* #27272A */
+    --text-muted: 82 82 91;         /* #52525B */
+    --text-faint: 161 161 170;      /* #A1A1AA */
+
+    --status-success: 124 159 63;
+    --status-warning: 180 83 9;     /* darker for AA on white */
+    --status-error: 185 28 28;      /* darker for AA on white */
+  }
 }
